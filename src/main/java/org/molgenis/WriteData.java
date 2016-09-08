@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
-public class EntityMapToCsvRow {
+public class WriteData {
     public List<Map<String, Object>> convert(Message in) {
         QueryResponse queryResponse = (QueryResponse) in.getBody();
         return queryResponse

@@ -2,6 +2,7 @@ package org.molgenis;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
+import org.apache.camel.processor.idempotent.MemoryIdempotentRepository;
 import org.apache.camel.spring.javaconfig.Main;
 import org.molgenis.messages.LoginRequest;
 import org.molgenis.messages.LoginResponse;
@@ -23,7 +24,6 @@ public class MyRouteBuilder extends RouteBuilder {
     public static final String MOLGENIS_SERVER = "MolgenisServer";
     public static final String ENTITY_NAMES = "EntityNames";
     private static final String ENTITY_NAME = "EntityName";
-    public static final String ATTRIBUTES = "attributes";
 
     /**
      * Allow this route to be run as an application
@@ -46,7 +46,7 @@ public class MyRouteBuilder extends RouteBuilder {
 
     public void configure() throws IOException {
         CsvDataFormat csvDataFormat = new CsvDataFormat(EXCEL);
-        EntityMapToCsvRow entityMapToCsvRow = new EntityMapToCsvRow();
+        csvDataFormat.setAllowMissingColumnNames(true);
 
         // Reads and parses config files from config directory
         from("file://src/main/resources/config?noop=true")
@@ -93,7 +93,18 @@ public class MyRouteBuilder extends RouteBuilder {
                 .unmarshal()
                 .json(Jackson, QueryResponse.class)
                 .multicast()
+                .to("direct:writeUniqueHeader")
                 .to("direct:getNextPage")
+                .to("direct:writeResponseToCsv");
+
+        from("direct:writeResponseToCsv")
+                .bean(new WriteData())
+                .to("direct:writeToCsv");
+
+        from("direct:writeUniqueHeader")
+                .idempotentConsumer(header(ENTITY_NAME),
+                        MemoryIdempotentRepository.memoryIdempotentRepository(200))
+                .bean(new WriteHeaders())
                 .to("direct:writeToCsv");
 
         // Retrieves the next page of entities, if the QueryResponse in the body has a nextHref
@@ -103,9 +114,8 @@ public class MyRouteBuilder extends RouteBuilder {
                 .setBody(constant(""))
                 .to("direct:getPage");
 
-        // Writes combined QueryResponse to csv file
+        // Appends QueryResponse to csv file
         from("direct:writeToCsv")
-                .bean(entityMapToCsvRow)
                 .marshal(csvDataFormat)
                 .setHeader(FILE_NAME, simple("${header.MolgenisServer}/${header.EntityName}"))
                 .to("file://target/data?fileExist=Append");

@@ -22,6 +22,8 @@ public class Attribute {
     private String defaultValue;
     private List<String> enumOptions;
     private String validationExpression;
+    private Range range;
+    private String expression;
 
     public boolean isAggregateable() {
         return aggregateable;
@@ -175,6 +177,22 @@ public class Attribute {
         this.validationExpression = validationExpression;
     }
 
+    public Range getRange() {
+        return range;
+    }
+
+    public void setRange(Range range) {
+        this.range = range;
+    }
+
+    public String getExpression() {
+        return expression;
+    }
+
+    public void setExpression(String expression) {
+        this.expression = expression;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -206,7 +224,10 @@ public class Attribute {
             return false;
         if (getEnumOptions() != null ? !getEnumOptions().equals(attribute.getEnumOptions()) : attribute.getEnumOptions() != null)
             return false;
-        return getValidationExpression() != null ? getValidationExpression().equals(attribute.getValidationExpression()) : attribute.getValidationExpression() == null;
+        if (getValidationExpression() != null ? !getValidationExpression().equals(attribute.getValidationExpression()) : attribute.getValidationExpression() != null)
+            return false;
+        if (getRange() != null ? !getRange().equals(attribute.getRange()) : attribute.getRange() != null) return false;
+        return getExpression() != null ? getExpression().equals(attribute.getExpression()) : attribute.getExpression() == null;
 
     }
 
@@ -231,6 +252,8 @@ public class Attribute {
         result = 31 * result + (getDefaultValue() != null ? getDefaultValue().hashCode() : 0);
         result = 31 * result + (getEnumOptions() != null ? getEnumOptions().hashCode() : 0);
         result = 31 * result + (getValidationExpression() != null ? getValidationExpression().hashCode() : 0);
+        result = 31 * result + (getRange() != null ? getRange().hashCode() : 0);
+        result = 31 * result + (getExpression() != null ? getExpression().hashCode() : 0);
         return result;
     }
 
@@ -256,6 +279,8 @@ public class Attribute {
                 ", defaultValue='" + defaultValue + '\'' +
                 ", enumOptions=" + enumOptions +
                 ", validationExpression='" + validationExpression + '\'' +
+                ", range=" + range +
+                ", expression='" + expression + '\'' +
                 '}';
     }
 }

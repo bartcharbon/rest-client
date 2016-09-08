@@ -6,6 +6,8 @@
     "sys_sec_MolgenisUser",
     "sys_md_entities",
     "sys_md_attributes",
+    "org_molgenis_test_TypeTest",
+    "org_molgenis_test_TypeTestRef",
     "codon"
   ]
 }
