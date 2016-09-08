@@ -12,7 +12,6 @@ import static java.util.stream.Collectors.toList;
 public class EntityMapToCsvRow {
     public List<Map<String, Object>> convert(Message in) {
         List<Map<String, Object>> attributes = (List<Map<String, Object>>) in.getHeader("attributes");
-        System.out.println(attributes);
         List<Map<String, Object>> entities = (List<Map<String, Object>>) in.getBody();
         return entities
                 .stream()

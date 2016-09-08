@@ -1,0 +1,10 @@
+{
+  "server": "localhost:8080",
+  "username": "admin",
+  "password": "secret",
+  "entities": [
+    "MolgenisUser",
+    "eu_bbmri_eric_countries",
+    "eu_bbmri_eric_networks"
+  ]
+}
