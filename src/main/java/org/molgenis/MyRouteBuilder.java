@@ -2,7 +2,6 @@ package org.molgenis;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
-import org.apache.camel.processor.idempotent.MemoryIdempotentRepository;
 import org.apache.camel.spring.javaconfig.Main;
 import org.molgenis.messages.LoginRequest;
 import org.molgenis.messages.LoginResponse;
@@ -16,6 +15,7 @@ import static org.apache.camel.Exchange.*;
 import static org.apache.camel.component.http4.HttpMethods.GET;
 import static org.apache.camel.component.http4.HttpMethods.POST;
 import static org.apache.camel.model.dataformat.JsonLibrary.Jackson;
+import static org.apache.camel.processor.idempotent.MemoryIdempotentRepository.memoryIdempotentRepository;
 import static org.apache.commons.csv.CSVFormat.EXCEL;
 
 @Component
@@ -94,16 +94,18 @@ public class MyRouteBuilder extends RouteBuilder {
                 .json(Jackson, QueryResponse.class)
                 .multicast()
                 .to("direct:writeUniqueHeader")
-                .to("direct:getNextPage")
-                .to("direct:writeResponseToCsv");
+                .to("direct:writeResponseToCsv")
+                .to("direct:getNextPage");
 
         from("direct:writeResponseToCsv")
+                .log("Parse data rows for entity ${header.EntityName}")
                 .bean(new WriteData())
                 .to("direct:writeToCsv");
 
         from("direct:writeUniqueHeader")
                 .idempotentConsumer(header(ENTITY_NAME),
-                        MemoryIdempotentRepository.memoryIdempotentRepository(200))
+                        memoryIdempotentRepository(200))
+                .log("Create header row for entity ${header.EntityName}")
                 .bean(new WriteHeaders())
                 .to("direct:writeToCsv");
 
