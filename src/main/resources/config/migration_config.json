@@ -1,10 +1,11 @@
 {
-  "server": "localhost:8080",
+  "server": "molgenis01.gcc.rug.nl",
   "username": "admin",
-  "password": "secret",
+  "password": "admin",
   "entities": [
-    "MolgenisUser",
-    "eu_bbmri_eric_countries",
-    "eu_bbmri_eric_networks"
+    "sys_sec_MolgenisUser",
+    "sys_md_entities",
+    "sys_md_attributes",
+    "codon"
   ]
 }

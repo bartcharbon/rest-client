@@ -2,18 +2,19 @@ package org.molgenis;
 
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
-import org.apache.camel.model.language.JsonPathExpression;
 import org.apache.camel.spring.javaconfig.Main;
+import org.molgenis.messages.LoginRequest;
+import org.molgenis.messages.LoginResponse;
+import org.molgenis.messages.QueryResponse;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.apache.camel.Exchange.*;
 import static org.apache.camel.component.http4.HttpMethods.GET;
 import static org.apache.camel.component.http4.HttpMethods.POST;
-import static org.apache.camel.model.dataformat.JsonLibrary.Gson;
+import static org.apache.camel.model.dataformat.JsonLibrary.Jackson;
 import static org.apache.commons.csv.CSVFormat.EXCEL;
 
 @Component
@@ -22,61 +23,92 @@ public class MyRouteBuilder extends RouteBuilder {
     public static final String MOLGENIS_SERVER = "MolgenisServer";
     public static final String ENTITY_NAMES = "EntityNames";
     private static final String ENTITY_NAME = "EntityName";
-    private Map<String, Object> blah = new HashMap<>();
+    public static final String ATTRIBUTES = "attributes";
 
     /**
      * Allow this route to be run as an application
      */
     public static void main(String[] args) throws Exception {
+        // delete results dir
+        delete(new File("target/data"));
         Main main = new Main();
         main.setConfigClass(RouteConfiguration.class);
         main.run(args);
+    }
+
+    static void delete(File f) throws IOException {
+        if (f.isDirectory()) {
+            for (File c : f.listFiles())
+                delete(c);
+        }
+        f.delete();
     }
 
     public void configure() throws IOException {
         CsvDataFormat csvDataFormat = new CsvDataFormat(EXCEL);
         EntityMapToCsvRow entityMapToCsvRow = new EntityMapToCsvRow();
 
-        // Read config and start
+        // Reads and parses config files from config directory
         from("file://src/main/resources/config?noop=true")
+                .log("Found config file ${header.CamelFileName}")
                 .unmarshal()
-                .json(Gson)
+                .json(Jackson)
                 .setHeader(MOLGENIS_SERVER, simple("body[server]"))
                 .setHeader(ENTITY_NAMES, simple("body[entities]"))
                 .marshal()
-                .json(Gson)
+                // trim config from login request
+                .json(Jackson)
+                .unmarshal()
+                .json(Jackson, LoginRequest.class)
                 .to("direct:login");
 
-        // Use properties to login
+        // message body contains LoginRequest, header MOLGENIS_SERVER contains the server
         from("direct:login")
-                .log("Login!")
+                .log("Login...")
+                .marshal()
+                .json(Jackson)
                 .setHeader(HTTP_METHOD, constant(POST))
                 .setHeader(CONTENT_TYPE, constant("application/json"))
-                .setHeader(HTTP_URI, simple("http://${header.MolgenisServer}/api/v1/login"))
-                .to("http4://loginRequest")
-                .setHeader("x-molgenis-token", new JsonPathExpression("$.token"))
+                .setHeader(HTTP_URI, simple("https://${header.MolgenisServer}/api/v1/login"))
+                .to("https4://loginRequest")
+                .unmarshal()
+                .json(Jackson, LoginResponse.class)
+                .log("Logged in. ${body}")
+                .setHeader("x-molgenis-token", simple("${body.token}"))
                 .to("direct:requestEntities");
 
-        // Split the entities in the header and retrieve data per entity
+        // body contains List<String> with entity names, header MOLGENIS_SERVER the server name
         from("direct:requestEntities")
-                .log("Request entities!")
+                .log("Request entities...")
                 .split(simple("${header.EntityNames}"))
-                .setHeader(HTTP_URI, simple("http://${header.MolgenisServer}/api/v2/${body}"))
+                .setHeader(HTTP_URI, simple("https://${header.MolgenisServer}/api/v2/${body}"))
                 .setHeader(ENTITY_NAME, simple("${body}"))
                 .to("direct:getPage");
 
-        // Retrieves a page of entities, from the URL
+        // Retrieves a page of entities, from the URL in CamelHttpUri
         from("direct:getPage")
+                .log("Requesting entity ${header.EntityName} from ${header.CamelHttpUri}...")
                 .setHeader(HTTP_METHOD, constant(GET))
-                .log("Requesting entity from ${header.CamelHttpUri}")
-                .to("http4://entityRequest")
+                .to("https4://entityRequest")
                 .unmarshal()
-                .json(Gson)
-                .setHeader("attributes", simple("body[meta][attributes]"))
-                .setBody(simple("body[items]"))
+                .json(Jackson, QueryResponse.class)
+                .multicast()
+                .to("direct:getNextPage")
+                .to("direct:writeToCsv");
+
+        // Retrieves the next page of entities, if the QueryResponse in the body has a nextHref
+        from("direct:getNextPage")
+                .filter(simple("${body.nextHref} != null"))
+                .setHeader(HTTP_URI, simple("body.nextHref"))
+                .setBody(constant(""))
+                .to("direct:getPage");
+
+        // Writes combined QueryResponse to csv file
+        from("direct:writeToCsv")
                 .bean(entityMapToCsvRow)
                 .marshal(csvDataFormat)
-                .setHeader(FILE_NAME, simple("header.EntityName"))
-                .to("file://target/data");
+                .setHeader(FILE_NAME, simple("${header.MolgenisServer}/${header.EntityName}"))
+                .to("file://target/data?fileExist=Append");
+
     }
 }

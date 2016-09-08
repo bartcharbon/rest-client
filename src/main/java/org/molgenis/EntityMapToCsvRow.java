@@ -1,6 +1,9 @@
 package org.molgenis;
 
 import org.apache.camel.Message;
+import org.molgenis.messages.Attribute;
+import org.molgenis.messages.Meta;
+import org.molgenis.messages.QueryResponse;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -11,30 +14,26 @@ import static java.util.stream.Collectors.toList;
 
 public class EntityMapToCsvRow {
     public List<Map<String, Object>> convert(Message in) {
-        List<Map<String, Object>> attributes = (List<Map<String, Object>>) in.getHeader("attributes");
-        List<Map<String, Object>> entities = (List<Map<String, Object>>) in.getBody();
-        return entities
+        QueryResponse queryResponse = (QueryResponse) in.getBody();
+        return queryResponse
+                .getItems()
                 .stream()
-                .map(entity -> apply(attributes, entity))
+                .map(entity -> toCsvRow(queryResponse
+                        .getMeta()
+                        .getAttributes(), entity))
                 .collect(toList());
     }
 
-    private Map<String, Object> apply(List<Map<String, Object>> attributes, Map<String, Object> entity) {
+    private Map<String, Object> toCsvRow(List<Attribute> attributes, Map<String, Object> entity) {
         Map<String, Object> result = new LinkedHashMap<>();
-        for (Map<String, Object> attr : attributes) {
-            String name = (String) attr.get("name");
+        for (Attribute attr : attributes) {
+            String name = attr.getName();
             Object value = entity.get(name);
             if (value != null) {
-                switch ((String) attr.get("fieldType")) {
+                switch (attr.getFieldType()) {
                     case "XREF":
                     case "CATEGORICAL":
                         result.put(name, getAttributeValue(attr, (Map<String, Object>) value));
-                        break;
-                    case "INT":
-                        result.put(name, (int) (double) value);
-                        break;
-                    case "LONG":
-                        result.put(name, (long) (double) value);
                         break;
                     case "MREF":
                     case "CATEGORICAL_MREF":
@@ -54,10 +53,10 @@ public class EntityMapToCsvRow {
         return result;
     }
 
-    private Object getAttributeValue(Map<String, Object> attr, Map<String, Object> value) {
+    private Object getAttributeValue(Attribute attr, Map<String, Object> value) {
         Map<String, Object> valueMap = value;
-        Map<String, Object> refEntity = (Map<String, Object>) (attr.get("refEntity"));
-        Object idAttributeName = refEntity.get("idAttribute");
+        Meta refEntity = attr.getRefEntity();
+        Object idAttributeName = refEntity.getIdAttribute();
         return valueMap.get(idAttributeName);
     }
 
