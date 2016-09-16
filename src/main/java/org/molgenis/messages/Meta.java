@@ -1,32 +1,28 @@
 package org.molgenis.messages;
 
+import com.google.common.collect.ImmutableMap;
+
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static com.google.common.collect.Lists.newArrayList;
 
 public class Meta {
 
-    private List<Attribute> attributes;
-
     private String href;
-
     private String hrefCollection;
-
-    private String idAttribute;
-
-    private String label;
-
-    private String labelAttribute;
-
-    private String languageCode;
-
-    private List<String> lookupAttributes;
-
     private String name;
-
+    private String label;
     private String description;
-
-    private boolean writable;
-
-    private boolean isAbstract;
+    private List<Attribute> attributes;
+    private String labelAttribute;
+    private String idAttribute;
+    private List<String> lookupAttributes;
+    private Boolean isAbstract;
+    private Boolean writable;
+    private String languageCode;
 
     public List<Attribute> getAttributes() {
         return attributes;
@@ -58,14 +54,6 @@ public class Meta {
 
     public void setIdAttribute(String idAttribute) {
         this.idAttribute = idAttribute;
-    }
-
-    public boolean getIsAbstract() {
-        return isAbstract;
-    }
-
-    public void setIsAbstract(boolean isAbstract) {
-        this.isAbstract = isAbstract;
     }
 
     public String getLabel() {
@@ -108,14 +96,6 @@ public class Meta {
         this.name = name;
     }
 
-    public boolean isWritable() {
-        return writable;
-    }
-
-    public void setWritable(boolean writable) {
-        this.writable = writable;
-    }
-
     public String getDescription() {
         return description;
     }
@@ -124,6 +104,21 @@ public class Meta {
         this.description = description;
     }
 
+    public Boolean getWritable() {
+        return writable;
+    }
+
+    public void setWritable(Boolean writable) {
+        this.writable = writable;
+    }
+
+    public Boolean getIsAbstract() {
+        return isAbstract;
+    }
+
+    public void setIsAbstract(Boolean isAbstract) {
+        this.isAbstract = isAbstract;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -132,41 +127,38 @@ public class Meta {
 
         Meta meta = (Meta) o;
 
-        if (getIsAbstract() != meta.getIsAbstract()) return false;
-        if (isWritable() != meta.isWritable()) return false;
-        if (getAttributes() != null ? !getAttributes().equals(meta.getAttributes()) : meta.getAttributes() != null)
+        if (attributes != null ? !attributes.equals(meta.attributes) : meta.attributes != null) return false;
+        if (href != null ? !href.equals(meta.href) : meta.href != null) return false;
+        if (hrefCollection != null ? !hrefCollection.equals(meta.hrefCollection) : meta.hrefCollection != null)
             return false;
-        if (getHref() != null ? !getHref().equals(meta.getHref()) : meta.getHref() != null) return false;
-        if (getHrefCollection() != null ? !getHrefCollection().equals(meta.getHrefCollection()) : meta.getHrefCollection() != null)
+        if (idAttribute != null ? !idAttribute.equals(meta.idAttribute) : meta.idAttribute != null) return false;
+        if (label != null ? !label.equals(meta.label) : meta.label != null) return false;
+        if (labelAttribute != null ? !labelAttribute.equals(meta.labelAttribute) : meta.labelAttribute != null)
             return false;
-        if (getIdAttribute() != null ? !getIdAttribute().equals(meta.getIdAttribute()) : meta.getIdAttribute() != null)
+        if (languageCode != null ? !languageCode.equals(meta.languageCode) : meta.languageCode != null) return false;
+        if (lookupAttributes != null ? !lookupAttributes.equals(meta.lookupAttributes) : meta.lookupAttributes != null)
             return false;
-        if (getLabel() != null ? !getLabel().equals(meta.getLabel()) : meta.getLabel() != null) return false;
-        if (getLabelAttribute() != null ? !getLabelAttribute().equals(meta.getLabelAttribute()) : meta.getLabelAttribute() != null)
-            return false;
-        if (getLanguageCode() != null ? !getLanguageCode().equals(meta.getLanguageCode()) : meta.getLanguageCode() != null)
-            return false;
-        if (getLookupAttributes() != null ? !getLookupAttributes().equals(meta.getLookupAttributes()) : meta.getLookupAttributes() != null)
-            return false;
-        if (getName() != null ? !getName().equals(meta.getName()) : meta.getName() != null) return false;
-        return getDescription() != null ? getDescription().equals(meta.getDescription()) : meta.getDescription() == null;
+        if (name != null ? !name.equals(meta.name) : meta.name != null) return false;
+        if (description != null ? !description.equals(meta.description) : meta.description != null) return false;
+        if (writable != null ? !writable.equals(meta.writable) : meta.writable != null) return false;
+        return isAbstract != null ? isAbstract.equals(meta.isAbstract) : meta.isAbstract == null;
 
     }
 
     @Override
     public int hashCode() {
-        int result = getAttributes() != null ? getAttributes().hashCode() : 0;
-        result = 31 * result + (getHref() != null ? getHref().hashCode() : 0);
-        result = 31 * result + (getHrefCollection() != null ? getHrefCollection().hashCode() : 0);
-        result = 31 * result + (getIdAttribute() != null ? getIdAttribute().hashCode() : 0);
-        result = 31 * result + (getIsAbstract() ? 1 : 0);
-        result = 31 * result + (getLabel() != null ? getLabel().hashCode() : 0);
-        result = 31 * result + (getLabelAttribute() != null ? getLabelAttribute().hashCode() : 0);
-        result = 31 * result + (getLanguageCode() != null ? getLanguageCode().hashCode() : 0);
-        result = 31 * result + (getLookupAttributes() != null ? getLookupAttributes().hashCode() : 0);
-        result = 31 * result + (getName() != null ? getName().hashCode() : 0);
-        result = 31 * result + (getDescription() != null ? getDescription().hashCode() : 0);
-        result = 31 * result + (isWritable() ? 1 : 0);
+        int result = attributes != null ? attributes.hashCode() : 0;
+        result = 31 * result + (href != null ? href.hashCode() : 0);
+        result = 31 * result + (hrefCollection != null ? hrefCollection.hashCode() : 0);
+        result = 31 * result + (idAttribute != null ? idAttribute.hashCode() : 0);
+        result = 31 * result + (label != null ? label.hashCode() : 0);
+        result = 31 * result + (labelAttribute != null ? labelAttribute.hashCode() : 0);
+        result = 31 * result + (languageCode != null ? languageCode.hashCode() : 0);
+        result = 31 * result + (lookupAttributes != null ? lookupAttributes.hashCode() : 0);
+        result = 31 * result + (name != null ? name.hashCode() : 0);
+        result = 31 * result + (description != null ? description.hashCode() : 0);
+        result = 31 * result + (writable != null ? writable.hashCode() : 0);
+        result = 31 * result + (isAbstract != null ? isAbstract.hashCode() : 0);
         return result;
     }
 
@@ -177,7 +169,6 @@ public class Meta {
                 ", href='" + href + '\'' +
                 ", hrefCollection='" + hrefCollection + '\'' +
                 ", idAttribute='" + idAttribute + '\'' +
-                ", isAbstract=" + isAbstract +
                 ", label='" + label + '\'' +
                 ", labelAttribute='" + labelAttribute + '\'' +
                 ", languageCode='" + languageCode + '\'' +
@@ -185,6 +176,31 @@ public class Meta {
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +
                 ", writable=" + writable +
+                ", isAbstract=" + isAbstract +
                 '}';
+    }
+
+    public Map<String, String> toCsv() {
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
+        List<String> nameParts = newArrayList(getName().split("_"));
+
+        builder.put("name", nameParts.get(nameParts.size() - 1));
+        builder.put("package", nameParts
+                .subList(0, nameParts.size() - 1)
+                .stream()
+                .collect(Collectors.joining("_")));
+        builder.put("label", getLabel());
+        if (getDescription() != null) {
+            builder.put("description", getDescription());
+        }
+        if (getIsAbstract() != null) {
+            builder.put("abstract", Boolean.toString(getIsAbstract()));
+        }
+        //TODO: tags!
+        return builder.build();
+    }
+
+    public static List<List<String>> createHeader() {
+        return Collections.singletonList(newArrayList("name", "package", "label", "description", "abstract"));
     }
 }

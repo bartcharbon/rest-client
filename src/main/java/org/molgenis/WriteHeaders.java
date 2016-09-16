@@ -11,12 +11,8 @@ import java.util.Map;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 
-/**
- * Created by fkelpin on 09/09/16.
- */
 public class WriteHeaders {
     public List<Map<String, String>> writeHeaders(QueryResponse response) {
-        QueryResponse result = new QueryResponse();
         Map<String, String> headers = response
                 .getMeta()
                 .getAttributes()
