@@ -1,9 +1,7 @@
 package org.molgenis;
 
-import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
-import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.camel.spring.javaconfig.Main;
 import org.apache.commons.csv.CSVFormat;
 import org.springframework.stereotype.Component;
@@ -28,46 +26,37 @@ public class MyRouteBuilder extends RouteBuilder {
         inputCsvDataFormat.setUseMaps(true);
 
         from("file://src/main/resources/data?noop=true")
-                .split(body().tokenize("\n", 1, true))
+                .log("[${date:now:mm.ss}] start")
+                .multicast()
+                .to("direct:headers")
+                .to("direct:body");
+
+        from("direct:headers")
+                .setBody(constant("\"hpo\",\"gene\",\"score\"\n"))
+                .to("direct:file");
+
+        from("direct:body")
+                .removeHeaders(".*")
+                .split(body().tokenize("\n", 5, true)) // stream input in chunks of 5 lines
                 .streaming()
+                .parallelProcessing()
+                .parallelAggregate()
                 .unmarshal(inputCsvDataFormat)
-                .split(simple("${body}"))
-                .setHeader("gene", simple("${body[Gene]}"))
-                .split(simple("${body.entrySet}"))
-                .filter(simple("${body.key} != 'Gene'"))
-                .setBody(simple("\"${body.key}\",\"${header.gene}\",${body.value}\\n"))
-                .aggregate(simple("true"), new StringBodyAggregator())
-                .completionSize(750)
+                .split(body()) // create separate messages for the lines
+                .setHeader("gene", simple("${body[Gene]}"))// remember the gene
+                .split(simple("${body.entrySet}"))// split into key/value pairs
+                .filter(simple("${body.key} != 'Gene'"))// remove the gene column header
+                .setBody(simple("\"${body.key}\",\"${header.gene}\",${body.value}\\n")) // create a csv line for the cell
+                .to("direct:file");
+
+        from("direct:file")
+                .aggregate(simple("true"), new StringBodyAggregator()) // combine lines before writing a chunk to file
+                .completionSize(1000)
                 .completionTimeout(1500)
-                .to("file://src/data/out?fileExist=Append");
+                .setHeader("CamelFileName", constant("GeneNetwork.csv"))
+                .log("[${date:now:mm.ss.SSS}] ${header.gene}")
+                .to("file://src/data/out?fileExist=Append"); // append to output file
 
     }
 
-    public class StringBodyAggregator implements AggregationStrategy {
-
-        //See http://www.catify.com/2012/07/09/parsing-large-files-with-apache-camel/
-
-        @Override
-        public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
-
-            if (oldExchange == null) {
-                return newExchange;
-            }
-
-            String oldBody = oldExchange
-                    .getIn()
-                    .getBody(String.class);
-            String newBody = newExchange
-                    .getIn()
-                    .getBody(String.class);
-            String body = oldBody + newBody;
-
-            oldExchange
-                    .getIn()
-                    .setBody(body);
-
-            return oldExchange;
-        }
-
-    }
 }
